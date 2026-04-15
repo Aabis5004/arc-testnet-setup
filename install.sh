@@ -1,15 +1,10 @@
 #!/bin/bash
 # ============================================================
-#  Arc Local Testnet — One-Click Installer (v2)
+#  Arc Local Testnet — One-Click Installer (v3)
 #  Linux / Ubuntu / VPS
 #
 #  Usage:
 #    curl -sSL https://raw.githubusercontent.com/YOUR_USER/arc-testnet-setup/main/install.sh | bash
-#
-#  Fixes in v2:
-#  - Does NOT install npm via apt (NodeSource nodejs already includes npm)
-#  - Handles containerd conflict with docker.io
-#  - Skips steps that are already completed
 # ============================================================
 
 set -e
@@ -21,6 +16,9 @@ step() { echo -e "\n${C}${BOLD}──── $* ${W}"; }
 ok()   { echo -e "${G}  ✓  $*${W}"; }
 warn() { echo -e "${Y}  ⚠  $*${W}"; }
 fail() { echo -e "${R}  ✗  $*${W}"; exit 1; }
+
+# ── Helper: run with sudo only if not already root ────────────
+s() { if [ "$(id -u)" = "0" ]; then "$@"; else sudo "$@"; fi; }
 
 clear
 echo -e "${C}"
@@ -38,11 +36,10 @@ DONE_FLAG="$HOME/.arc_testnet_setup_done"
 if [ ! -f "$DONE_FLAG" ]; then
 
   # ── Step 1: Base packages ───────────────────────────────────────
-  # IMPORTANT: Do NOT include nodejs or npm here — they conflict.
-  # NodeSource nodejs (installed in step 3) already includes npm.
+  # No nodejs/npm here — NodeSource nodejs includes npm (apt npm conflicts)
   step "1/8  Installing base packages..."
-  sudo apt-get update -y -qq 2>/dev/null
-  sudo apt-get install -y git make libclang-dev curl 2>/dev/null
+  s apt-get update -y -qq 2>/dev/null
+  s apt-get install -y git make libclang-dev curl 2>/dev/null
   ok "Base packages ready"
 
   # ── Step 2: Docker ──────────────────────────────────────────────
@@ -50,28 +47,25 @@ if [ ! -f "$DONE_FLAG" ]; then
   if command -v docker &>/dev/null; then
     ok "Docker already installed — skipping"
   else
-    # containerd.io conflicts with containerd — remove first
-    sudo apt-get remove -y containerd 2>/dev/null || true
-    sudo apt-get install -y docker.io 2>/dev/null || \
-      curl -fsSL https://get.docker.com | sudo sh
+    s apt-get remove -y containerd 2>/dev/null || true
+    s apt-get install -y docker.io 2>/dev/null || \
+      curl -fsSL https://get.docker.com | s sh
   fi
-  sudo service docker start 2>/dev/null || true
-  sudo usermod -aG docker "$USER" 2>/dev/null || true
+  s service docker start 2>/dev/null || true
+  s usermod -aG docker "$USER" 2>/dev/null || true
   ok "Docker ready"
 
   # ── Step 3: Node.js 22 via NodeSource ───────────────────────────
-  # NodeSource nodejs includes npm — never install npm via apt separately
+  # NodeSource bundles npm — NEVER install npm via apt separately
   step "3/8  Checking Node.js..."
   NODE_MAJOR=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1 || echo "0")
   if [ "$NODE_MAJOR" -ge 22 ] 2>/dev/null; then
     ok "Node.js $(node --version) already installed — skipping"
   else
-    # Remove Ubuntu's conflicting nodejs/npm packages first
-    sudo apt-get remove -y nodejs npm 2>/dev/null || true
-    sudo apt-get autoremove -y 2>/dev/null || true
-    # Install Node.js 22 from NodeSource (npm is bundled — no separate install needed)
-    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - 2>/dev/null
-    sudo apt-get install -y nodejs 2>/dev/null
+    s apt-get remove -y nodejs npm 2>/dev/null || true
+    s apt-get autoremove -y 2>/dev/null || true
+    curl -fsSL https://deb.nodesource.com/setup_22.x | s bash - 2>/dev/null
+    s apt-get install -y nodejs 2>/dev/null
     ok "Node.js $(node --version) ready"
   fi
   command -v npm &>/dev/null || fail "npm not found after Node.js install"
@@ -100,16 +94,19 @@ if [ ! -f "$DONE_FLAG" ]; then
   ok "Foundry ready"
 
   # ── Step 6: Docker Compose v2.24.0 ───────────────────────────────
+  # Use HOME dir to avoid permission issues, then move with sudo
   step "6/8  Updating Docker Compose..."
   COMPOSE_CURRENT=$(docker compose version 2>/dev/null | grep -o '[0-9]*\.[0-9]*\.[0-9]*' | head -1)
   if [ "$COMPOSE_CURRENT" = "2.24.0" ]; then
     ok "Docker Compose 2.24.0 already installed — skipping"
   else
-    sudo mkdir -p /usr/local/lib/docker/cli-plugins
-    sudo curl -sSL \
+    COMPOSE_TMP="$HOME/docker-compose-tmp"
+    curl -sSL \
       "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" \
-      -o /usr/local/lib/docker/cli-plugins/docker-compose
-    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+      -o "$COMPOSE_TMP" || fail "Failed to download Docker Compose"
+    s mkdir -p /usr/local/lib/docker/cli-plugins
+    s mv "$COMPOSE_TMP" /usr/local/lib/docker/cli-plugins/docker-compose
+    s chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
   fi
   ok "Docker Compose ready"
 
