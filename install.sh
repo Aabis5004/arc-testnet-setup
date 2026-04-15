@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Arc Local Testnet — One-Click Installer (v3)
+#  Arc Local Testnet — One-Click Installer (v4)
 #  Linux / Ubuntu / VPS
 #
 #  Usage:
@@ -17,7 +17,7 @@ ok()   { echo -e "${G}  ✓  $*${W}"; }
 warn() { echo -e "${Y}  ⚠  $*${W}"; }
 fail() { echo -e "${R}  ✗  $*${W}"; exit 1; }
 
-# ── Helper: run with sudo only if not already root ────────────
+# Run with sudo only if not already root
 s() { if [ "$(id -u)" = "0" ]; then "$@"; else sudo "$@"; fi; }
 
 clear
@@ -87,20 +87,30 @@ if [ ! -f "$DONE_FLAG" ]; then
   step "5/8  Installing Foundry v1.4.4..."
   export FOUNDRY_DIR="$HOME/.foundry"
   export PATH="$HOME/.foundry/bin:$PATH"
+
   if [ ! -f "$HOME/.foundry/bin/foundryup" ]; then
     curl -sSfL https://foundry.paradigm.xyz | bash 2>/dev/null || true
+    export PATH="$HOME/.foundry/bin:$PATH"
   fi
+
   "$HOME/.foundry/bin/foundryup" -i v1.4.4 2>/dev/null || warn "Foundry version issue — continuing"
+
+  # Add foundry to PATH permanently so every future session finds it
+  grep -q ".foundry/bin" "$HOME/.bashrc" 2>/dev/null || \
+    echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> "$HOME/.bashrc"
+  grep -q ".foundry/bin" "$HOME/.profile" 2>/dev/null || \
+    echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> "$HOME/.profile"
+
   ok "Foundry ready"
 
   # ── Step 6: Docker Compose v2.24.0 ───────────────────────────────
-  # Use HOME dir to avoid permission issues, then move with sudo
+  # Download to HOME first (no sudo needed), then move with sudo
   step "6/8  Updating Docker Compose..."
   COMPOSE_CURRENT=$(docker compose version 2>/dev/null | grep -o '[0-9]*\.[0-9]*\.[0-9]*' | head -1)
   if [ "$COMPOSE_CURRENT" = "2.24.0" ]; then
     ok "Docker Compose 2.24.0 already installed — skipping"
   else
-    COMPOSE_TMP="$HOME/docker-compose-tmp"
+    COMPOSE_TMP="$HOME/dc-tmp"
     curl -sSL \
       "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" \
       -o "$COMPOSE_TMP" || fail "Failed to download Docker Compose"
@@ -151,7 +161,10 @@ echo ""
 echo -e "  Press ${BOLD}Ctrl+C${W} to stop."
 echo ""
 
+# Load all paths before launching
 export PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:$PATH"
 source "$HOME/.cargo/env" 2>/dev/null || true
+source "$HOME/.bashrc" 2>/dev/null || true
+
 cd ~/arc-node
 sg docker -c "make testnet" 2>/dev/null || sudo make testnet
