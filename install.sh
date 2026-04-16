@@ -1,10 +1,13 @@
 #!/bin/bash
 # ============================================================
-#  Arc Local Testnet — One-Click Installer (v4)
+#  Arc Local Testnet — One-Click Installer (v5)
 #  Linux / Ubuntu / VPS
 #
 #  Usage:
 #    curl -sSL https://raw.githubusercontent.com/YOUR_USER/arc-testnet-setup/main/install.sh | bash
+#
+#  v5 fix: PATH is passed explicitly inside sg docker subshell
+#  so Foundry is always found regardless of .bashrc loading
 # ============================================================
 
 set -e
@@ -95,11 +98,11 @@ if [ ! -f "$DONE_FLAG" ]; then
 
   "$HOME/.foundry/bin/foundryup" -i v1.4.4 2>/dev/null || warn "Foundry version issue — continuing"
 
-  # Add foundry to PATH permanently so every future session finds it
-  grep -q ".foundry/bin" "$HOME/.bashrc" 2>/dev/null || \
-    echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> "$HOME/.bashrc"
-  grep -q ".foundry/bin" "$HOME/.profile" 2>/dev/null || \
-    echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> "$HOME/.profile"
+  # Write to every possible profile file so all shell types load it
+  for PROFILE in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$HOME/.zshrc"; do
+    grep -q ".foundry/bin" "$PROFILE" 2>/dev/null || \
+      echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> "$PROFILE" 2>/dev/null || true
+  done
 
   ok "Foundry ready"
 
@@ -161,10 +164,17 @@ echo ""
 echo -e "  Press ${BOLD}Ctrl+C${W} to stop."
 echo ""
 
-# Load all paths before launching
-export PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:$PATH"
+# Build the full PATH string — passed explicitly into every subshell
+FULL_PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:$PATH"
 source "$HOME/.cargo/env" 2>/dev/null || true
-source "$HOME/.bashrc" 2>/dev/null || true
 
 cd ~/arc-node
-sg docker -c "make testnet" 2>/dev/null || sudo make testnet
+
+# Pass PATH explicitly inside sg docker subshell — this is the key fix.
+# sg opens a new shell that does NOT load .bashrc, so we inject PATH directly.
+if sg docker true 2>/dev/null; then
+  sg docker -c "export PATH=\"$FULL_PATH\" && cd $HOME/arc-node && make testnet"
+else
+  export PATH="$FULL_PATH"
+  sudo -E make testnet
+fi
