@@ -19,10 +19,10 @@ Pick your platform and run **one command**. That's it.
 curl -sSL https://raw.githubusercontent.com/Aabis5004/arc-testnet-setup/main/install.sh | bash
 ```
 or 
-
+```bash
 rm ~/.arc_testnet_setup_done
 curl -sSL https://raw.githubusercontent.com/aabis5004/arc-testnet-setup/main/install.sh | bash
-
+```
 ### 🪟 Windows (PowerShell as Administrator)
 
 ```powershell
