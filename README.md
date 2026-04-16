@@ -16,13 +16,17 @@ Pick your platform and run **one command**. That's it.
 ### 🐧 Linux / Ubuntu / VPS
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/YOUR_USER/arc-testnet-setup/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Aabis5004/arc-testnet-setup/main/install.sh | bash
 ```
+or 
+
+rm ~/.arc_testnet_setup_done
+curl -sSL https://raw.githubusercontent.com/aabis5004/arc-testnet-setup/main/install.sh | bash
 
 ### 🪟 Windows (PowerShell as Administrator)
 
 ```powershell
-irm https://raw.githubusercontent.com/YOUR_USER/arc-testnet-setup/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Aabis5004/arc-testnet-setup/main/install.ps1 | iex
 ```
 
 > **Windows users:** Right-click the Start menu → *Windows PowerShell (Admin)* → paste the command above.
