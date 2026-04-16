@@ -23,15 +23,6 @@ or
 rm ~/.arc_testnet_setup_done
 curl -sSL https://raw.githubusercontent.com/aabis5004/arc-testnet-setup/main/install.sh | bash
 ```
-### 🪟 Windows (PowerShell as Administrator)
-
-```powershell
-irm https://raw.githubusercontent.com/Aabis5004/arc-testnet-setup/main/install.ps1 | iex
-```
-
-> **Windows users:** Right-click the Start menu → *Windows PowerShell (Admin)* → paste the command above.
-
----
 
 ## What happens
 
@@ -169,18 +160,3 @@ Then refresh the page.
 - [Bug Bounty (HackerOne)](https://hackerone.com/circle-bbp) — $150 to $5,000+
 - [Testnet Block Explorer](https://testnet.arcscan.app/)
 - [Testnet Faucet](https://faucet.circle.com/)
-
----
-
-## Files in this repo
-
-| File | Purpose |
-|------|---------|
-| `install.sh` | One-click installer for Linux / Ubuntu / VPS |
-| `install.ps1` | One-click installer for Windows (via WSL) |
-| `stop.sh` | Stop the running testnet |
-
----
-
-*This is a community guide. Arc is currently in testnet phase.*  
-*If you get stuck, screenshot the error and ask [Claude](https://claude.ai) for help.*
