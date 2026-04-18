@@ -209,10 +209,17 @@ else
   # Always stop Apache2 on every run — it may have been re-enabled
   s service apache2 stop 2>/dev/null || true
 
-  # Fix blockscout dets folder permissions on every run
-  # Docker container runs as different UID — needs 777 to write queue_storage
-  mkdir -p "$HOME/arc-node/.quake/localdev/blockscout/dets"            "$HOME/arc-node/.quake/localdev/blockscout/logs"            "$HOME/arc-node/.quake/localdev/blockscout/db" 2>/dev/null || true
-  s chmod -R 777 "$HOME/arc-node/.quake/localdev/blockscout/" 2>/dev/null || true
+  # Fix permissions on all data directories — Docker runs as different UID
+  # blockscout: needs 777 for dets/queue_storage (eacces error)
+  # prometheus: needs ./data/prometheus to exist and be writable
+  # grafana: runs as user 501, needs to own ./data/grafana
+  mkdir -p "$HOME/arc-node/.quake/localdev/blockscout/dets" \
+           "$HOME/arc-node/.quake/localdev/blockscout/logs" \
+           "$HOME/arc-node/.quake/localdev/blockscout/db" \
+           "$HOME/arc-node/.quake/monitoring/data/prometheus" \
+           "$HOME/arc-node/.quake/monitoring/data/grafana" 2>/dev/null || true
+  s chmod -R 777 "$HOME/arc-node/.quake/localdev/blockscout/" \
+                 "$HOME/arc-node/.quake/monitoring/data/" 2>/dev/null || true
 fi
 
 # ── Show WSL IP for browser access ───────────────────────────
