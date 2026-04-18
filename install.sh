@@ -208,6 +208,11 @@ else
 
   # Always stop Apache2 on every run — it may have been re-enabled
   s service apache2 stop 2>/dev/null || true
+
+  # Fix blockscout dets folder permissions on every run
+  # Docker container runs as different UID — needs 777 to write queue_storage
+  mkdir -p "$HOME/arc-node/.quake/localdev/blockscout/dets"            "$HOME/arc-node/.quake/localdev/blockscout/logs"            "$HOME/arc-node/.quake/localdev/blockscout/db" 2>/dev/null || true
+  s chmod -R 777 "$HOME/arc-node/.quake/localdev/blockscout/" 2>/dev/null || true
 fi
 
 # ── Show WSL IP for browser access ───────────────────────────
