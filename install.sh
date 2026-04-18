@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Arc Local Testnet — One-Click Installer (v8 — fully tested)
+#  Arc Local Testnet — One-Click Installer (v9 — battle tested & community verified)
 #  Linux / Ubuntu / VPS
 #
 #  Usage:
@@ -205,22 +205,23 @@ if [ ! -f "$DONE_FLAG" ]; then
 
 else
   echo -e "${G}  ✓  Already set up — skipping install${W}"
-
-  # Always stop Apache2 on every run — it may have been re-enabled
-  s service apache2 stop 2>/dev/null || true
-
-  # Fix permissions on all data directories — Docker runs as different UID
-  # blockscout: needs 777 for dets/queue_storage (eacces error)
-  # prometheus: needs ./data/prometheus to exist and be writable
-  # grafana: runs as user 501, needs to own ./data/grafana
-  mkdir -p "$HOME/arc-node/.quake/localdev/blockscout/dets" \
-           "$HOME/arc-node/.quake/localdev/blockscout/logs" \
-           "$HOME/arc-node/.quake/localdev/blockscout/db" \
-           "$HOME/arc-node/.quake/monitoring/data/prometheus" \
-           "$HOME/arc-node/.quake/monitoring/data/grafana" 2>/dev/null || true
-  s chmod -R 777 "$HOME/arc-node/.quake/localdev/blockscout/" \
-                 "$HOME/arc-node/.quake/monitoring/data/" 2>/dev/null || true
 fi
+
+# ── Always run on every start ─────────────────────────────────
+# Stop Apache2 — steals port 80 from block explorer
+s service apache2 stop 2>/dev/null || true
+
+# Fix data directory permissions — Docker runs as different UID
+# blockscout: needs 777 for dets/queue_storage (eacces error)
+# prometheus: needs ./data/prometheus to exist and be writable  
+# grafana: runs as user 501, needs to own ./data/grafana
+mkdir -p "$HOME/arc-node/.quake/localdev/blockscout/dets" \
+         "$HOME/arc-node/.quake/localdev/blockscout/logs" \
+         "$HOME/arc-node/.quake/localdev/blockscout/db" \
+         "$HOME/arc-node/.quake/monitoring/data/prometheus" \
+         "$HOME/arc-node/.quake/monitoring/data/grafana" 2>/dev/null || true
+s chmod -R 777 "$HOME/arc-node/.quake/localdev/blockscout/" \
+               "$HOME/arc-node/.quake/monitoring/data/" 2>/dev/null || true
 
 # ── Show WSL IP for browser access ───────────────────────────
 WSL_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
